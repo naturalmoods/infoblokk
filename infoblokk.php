@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) exit;
 add_action('admin_init', function () {
     register_setting('infoblokk_settings', 'infoblokk_active');
     register_setting('infoblokk_settings', 'infoblokk_position');
+    register_setting('infoblokk_settings', 'infoblokk_style');
     register_setting('infoblokk_settings', 'infoblokk_url');
 });
 
@@ -46,6 +47,15 @@ function infoblokk_settings_page() {
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row">Kép</th>
+                    <td>
+                        <select name="infoblokk_style">
+                            <option value="default" <?php selected(get_option('infoblokk_style'), 'default'); ?>>Széchenyi (Alapértelmezett)</option>
+                            <option value="eu_social" <?php selected(get_option('infoblokk_style'), 'eu_social'); ?>>EU Szociális Alap</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
                     <th scope="row">URL</th>
                     <td>
                         <input type="text" name="infoblokk_url" value="<?php echo esc_attr(get_option('infoblokk_url')); ?>" style="width: 400px;">
@@ -65,9 +75,14 @@ function infoblokk_display() {
     if (!get_option('infoblokk_active')) return;
 
     $position = get_option('infoblokk_position', 'top');
+    $style = get_option('infoblokk_style', 'default');
     $url = esc_url(get_option('infoblokk_url', '#'));
 
-    $image = plugin_dir_url(__FILE__) . ($position === 'top' ? 'img/infoblokk_top.png' : 'img/infoblokk_bottom.png');
+    if ($style === 'eu_social') {
+        $image = plugin_dir_url(__FILE__) . 'img/eu-szocialis-alap.png';
+    } else {
+        $image = plugin_dir_url(__FILE__) . ($position === 'top' ? 'img/infoblokk_top.png' : 'img/infoblokk_bottom.png');
+    }
     $css_position = $position === 'top' ? 'top: 0px;' : 'bottom: 0px;';
 
     echo '
