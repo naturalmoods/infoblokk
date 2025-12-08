@@ -2,7 +2,7 @@
 /*
 Plugin Name: Infoblokk
 Description: Jobb oldali fix infoblokk, felül vagy alul megjelenítve.
-Version: 1.3
+Version: 1.4
 Author: Cre-art Stúdió
 */
 
@@ -13,6 +13,7 @@ add_action('admin_init', function () {
     register_setting('infoblokk_settings', 'infoblokk_active');
     register_setting('infoblokk_settings', 'infoblokk_position');
     register_setting('infoblokk_settings', 'infoblokk_style');
+    register_setting('infoblokk_settings', 'infoblokk_disable_close');
     register_setting('infoblokk_settings', 'infoblokk_url');
 });
 
@@ -61,6 +62,12 @@ function infoblokk_settings_page() {
                         <input type="text" name="infoblokk_url" value="<?php echo esc_attr(get_option('infoblokk_url')); ?>" style="width: 400px;">
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row">Bezárás gomb elrejtése</th>
+                    <td>
+                        <input type="checkbox" name="infoblokk_disable_close" value="1" <?php checked(1, get_option('infoblokk_disable_close'), true); ?>>
+                    </td>
+                </tr>
             </table>
 
             <?php submit_button(); ?>
@@ -85,6 +92,8 @@ function infoblokk_display() {
     }
     $css_position = $position === 'top' ? 'top: 0px;' : 'bottom: 0px;';
 
+    $disable_close = get_option('infoblokk_disable_close');
+
     echo '
     <style>
         #infoblokk {
@@ -94,6 +103,7 @@ function infoblokk_display() {
             padding: 0;
             display: none;
         }
+        '.(!$disable_close ? '
         #infoblokk-close {
             position: absolute;
             top: 0;
@@ -108,10 +118,11 @@ function infoblokk_display() {
         #infoblokk:hover #infoblokk-close {
             display: block;
         }
+        ' : '').'
     </style>
 
     <div id="infoblokk" style="'.$css_position.'">
-        <span id="infoblokk-close">×</span>
+        '.(!$disable_close ? '<span id="infoblokk-close">×</span>' : '').'
         <a href="'.$url.'"><img src="'.$image.'" alt="Infoblokk"></a>
     </div>
 
@@ -120,10 +131,12 @@ function infoblokk_display() {
         if(!sessionStorage.getItem("infoblokk_closed")){
             document.getElementById("infoblokk").style.display = "block";
         }
+        '.(!$disable_close ? '
         document.getElementById("infoblokk-close").addEventListener("click", function(){
             document.getElementById("infoblokk").style.display = "none";
             sessionStorage.setItem("infoblokk_closed", "1");
         });
+        ' : '').'
     });
     </script>
     ';
