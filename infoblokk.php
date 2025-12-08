@@ -2,8 +2,8 @@
 /*
 Plugin Name: Infoblokk
 Description: Jobb oldali fix infoblokk, felül vagy alul megjelenítve.
-Version: 1.2
-Author: Péter
+Version: 1.3
+Author: Cre-art Stúdió
 */
 
 if (!defined('ABSPATH')) exit;
