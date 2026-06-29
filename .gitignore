@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local env / logs
+.env
+*.log
+
+# Build archives
+*.zip
+*.tar.gz

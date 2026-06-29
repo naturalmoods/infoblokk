@@ -2,19 +2,117 @@
 /*
 Plugin Name: Infoblokk
 Description: Jobb oldali fix infoblokk, felül vagy alul megjelenítve.
-Version: 1.4
+Version: 1.7
 Author: Cre-art Stúdió
 */
 
 if (!defined('ABSPATH')) exit;
 
+function infoblokk_styles() {
+    return [
+        'stp' => [
+            'label' => 'Széchenyi Terv Plusz',
+            'top' => 'szechenyi-terv-plusz.webp',
+            'bottom' => 'szechenyi-terv-plusz.webp',
+        ],
+        'erfa' => [
+            'label' => 'Európai Regionális Fejlesztési Alap',
+            'top' => 'infoblokk_ERFA_felso.webp',
+            'bottom' => 'infoblokk_ERFA_also.webp',
+        ],
+        'esza' => [
+            'label' => 'Európai Szociális Alap',
+            'top' => 'infoblokk_ESZA_felso.webp',
+            'bottom' => 'infoblokk_ESZA_also.webp',
+        ],
+        'ka' => [
+            'label' => 'Kohéziós Alap',
+            'top' => 'infoblokk_KA_felso.webp',
+            'bottom' => 'infoblokk_KA_also.webp',
+        ],
+        'esba' => [
+            'label' => 'Európai Strukturális és Beruházási Alapok',
+            'top' => 'infoblokk_ESBA_felso.webp',
+            'bottom' => 'infoblokk_ESBA_also.webp',
+        ],
+    ];
+}
+
+function infoblokk_normalize_style($style) {
+    $old_styles = ['default' => 'stp', 'eu_social' => 'esza'];
+    $style = $old_styles[$style] ?? $style;
+
+    return isset(infoblokk_styles()[$style]) ? $style : 'stp';
+}
+
+function infoblokk_can_go_left($style) {
+    $style = infoblokk_styles()[infoblokk_normalize_style($style)];
+
+    return $style['top'] === $style['bottom'];
+}
+
+function infoblokk_normalize_side($side, $style) {
+    return $side === 'left' && infoblokk_can_go_left($style) ? 'left' : 'right';
+}
+
+function infoblokk_empty_block() {
+    return [
+        'active' => 1,
+        'position' => 'top',
+        'side' => 'right',
+        'style' => 'stp',
+        'url' => '',
+        'disable_close' => 0,
+    ];
+}
+
+function infoblokk_sanitize_blocks($blocks) {
+    if (!is_array($blocks)) return [];
+
+    $clean = [];
+    foreach ($blocks as $block) {
+        if (!is_array($block)) continue;
+
+        $style = infoblokk_normalize_style($block['style'] ?? 'stp');
+        $clean[] = [
+            'active' => empty($block['active']) ? 0 : 1,
+            'position' => (($block['position'] ?? 'top') === 'bottom') ? 'bottom' : 'top',
+            'side' => infoblokk_normalize_side($block['side'] ?? 'right', $style),
+            'style' => $style,
+            'url' => esc_url_raw($block['url'] ?? ''),
+            'disable_close' => empty($block['disable_close']) ? 0 : 1,
+        ];
+    }
+
+    return $clean;
+}
+
+function infoblokk_get_blocks() {
+    $blocks = get_option('infoblokk_blocks', null);
+    if (is_array($blocks)) return $blocks;
+
+    // Régi, egy infoblokkos beállítások átvétele mentésig.
+    return [[
+        'active' => get_option('infoblokk_active') ? 1 : 0,
+        'position' => get_option('infoblokk_position', 'top'),
+        'side' => 'right',
+        'style' => infoblokk_normalize_style(get_option('infoblokk_style', 'stp')),
+        'url' => get_option('infoblokk_url', ''),
+        'disable_close' => get_option('infoblokk_disable_close') ? 1 : 0,
+    ]];
+}
+
+function infoblokk_image_url($style, $position) {
+    $style = infoblokk_styles()[infoblokk_normalize_style($style)];
+
+    return plugin_dir_url(__FILE__) . 'img/' . $style[$position === 'bottom' ? 'bottom' : 'top'];
+}
+
 // Beállítások regisztrálása
 add_action('admin_init', function () {
-    register_setting('infoblokk_settings', 'infoblokk_active');
-    register_setting('infoblokk_settings', 'infoblokk_position');
-    register_setting('infoblokk_settings', 'infoblokk_style');
-    register_setting('infoblokk_settings', 'infoblokk_disable_close');
-    register_setting('infoblokk_settings', 'infoblokk_url');
+    register_setting('infoblokk_settings', 'infoblokk_blocks', [
+        'sanitize_callback' => 'infoblokk_sanitize_blocks',
+    ]);
 });
 
 // Admin menü létrehozása
@@ -22,8 +120,61 @@ add_action('admin_menu', function () {
     add_options_page('Infoblokk Beállítások', 'Infoblokk', 'manage_options', 'infoblokk', 'infoblokk_settings_page');
 });
 
+function infoblokk_block_fields($index, $block) {
+    $block = wp_parse_args($block, infoblokk_empty_block());
+    ?>
+    <div class="infoblokk-admin-block" style="border:1px solid #ccd0d4;background:#fff;padding:16px;margin:0 0 16px;max-width:760px;">
+        <p style="margin-top:0;"><strong>Infoblokk</strong> <button type="button" class="button-link-delete infoblokk-remove" style="float:right;">Eltávolítás</button></p>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">Aktív</th>
+                <td><input type="checkbox" name="infoblokk_blocks[<?php echo esc_attr($index); ?>][active]" value="1" <?php checked(1, $block['active'], true); ?>></td>
+            </tr>
+            <tr>
+                <th scope="row">Pozíció</th>
+                <td>
+                    <select name="infoblokk_blocks[<?php echo esc_attr($index); ?>][position]">
+                        <option value="top" <?php selected($block['position'], 'top'); ?>>Felül</option>
+                        <option value="bottom" <?php selected($block['position'], 'bottom'); ?>>Alul</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Oldal</th>
+                <td>
+                    <select name="infoblokk_blocks[<?php echo esc_attr($index); ?>][side]">
+                        <option value="right" <?php selected($block['side'], 'right'); ?>>Jobbra</option>
+                        <option value="left" <?php selected($block['side'], 'left'); ?>>Balra</option>
+                    </select>
+                    <p class="description">Balra csak a Széchenyi Terv Plusz tehető; a többi mindig jobbra kerül.</p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Kép</th>
+                <td>
+                    <select name="infoblokk_blocks[<?php echo esc_attr($index); ?>][style]">
+                        <?php foreach (infoblokk_styles() as $style_key => $style) : ?>
+                            <option value="<?php echo esc_attr($style_key); ?>" <?php selected(infoblokk_normalize_style($block['style']), $style_key); ?>><?php echo esc_html($style['label']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">URL</th>
+                <td><input type="text" name="infoblokk_blocks[<?php echo esc_attr($index); ?>][url]" value="<?php echo esc_attr($block['url']); ?>" style="width:400px;max-width:100%;"></td>
+            </tr>
+            <tr>
+                <th scope="row">Bezárás gomb elrejtése</th>
+                <td><input type="checkbox" name="infoblokk_blocks[<?php echo esc_attr($index); ?>][disable_close]" value="1" <?php checked(1, $block['disable_close'], true); ?>></td>
+            </tr>
+        </table>
+    </div>
+    <?php
+}
+
 // Admin oldal HTML
 function infoblokk_settings_page() {
+    $blocks = infoblokk_get_blocks();
     ?>
     <div class="wrap">
         <h1>Infoblokk beállítások</h1>
@@ -31,47 +182,34 @@ function infoblokk_settings_page() {
             <?php settings_fields('infoblokk_settings'); ?>
             <?php do_settings_sections('infoblokk_settings'); ?>
 
-            <table class="form-table">
-                <tr>
-                    <th scope="row">Aktív</th>
-                    <td>
-                        <input type="checkbox" name="infoblokk_active" value="1" <?php checked(1, get_option('infoblokk_active'), true); ?>>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">Pozíció</th>
-                    <td>
-                        <select name="infoblokk_position">
-                            <option value="top" <?php selected(get_option('infoblokk_position'), 'top'); ?>>Felül</option>
-                            <option value="bottom" <?php selected(get_option('infoblokk_position'), 'bottom'); ?>>Alul</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">Kép</th>
-                    <td>
-                        <select name="infoblokk_style">
-                            <option value="default" <?php selected(get_option('infoblokk_style'), 'default'); ?>>Széchenyi (Alapértelmezett)</option>
-                            <option value="eu_social" <?php selected(get_option('infoblokk_style'), 'eu_social'); ?>>EU Szociális Alap</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">URL</th>
-                    <td>
-                        <input type="text" name="infoblokk_url" value="<?php echo esc_attr(get_option('infoblokk_url')); ?>" style="width: 400px;">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">Bezárás gomb elrejtése</th>
-                    <td>
-                        <input type="checkbox" name="infoblokk_disable_close" value="1" <?php checked(1, get_option('infoblokk_disable_close'), true); ?>>
-                    </td>
-                </tr>
-            </table>
+            <div id="infoblokk-blocks">
+                <?php foreach ($blocks as $index => $block) infoblokk_block_fields($index, $block); ?>
+            </div>
+
+            <p><button type="button" class="button" id="infoblokk-add">Új infoblokk</button></p>
 
             <?php submit_button(); ?>
         </form>
+
+        <script type="text/template" id="infoblokk-template">
+            <?php infoblokk_block_fields('__index__', infoblokk_empty_block()); ?>
+        </script>
+        <script>
+        (function () {
+            var holder = document.getElementById('infoblokk-blocks');
+            var template = document.getElementById('infoblokk-template').innerHTML;
+
+            document.getElementById('infoblokk-add').addEventListener('click', function () {
+                holder.insertAdjacentHTML('beforeend', template.replace(/__index__/g, Date.now()));
+            });
+
+            holder.addEventListener('click', function (event) {
+                if (event.target.classList.contains('infoblokk-remove')) {
+                    event.target.closest('.infoblokk-admin-block').remove();
+                }
+            });
+        })();
+        </script>
     </div>
     <?php
 }
@@ -79,64 +217,90 @@ function infoblokk_settings_page() {
 // Megjelenítés a frontend-en
 add_action('wp_footer', 'infoblokk_display');
 function infoblokk_display() {
-    if (!get_option('infoblokk_active')) return;
+    $blocks = infoblokk_get_blocks();
+    if (!$blocks) return;
 
-    $position = get_option('infoblokk_position', 'top');
-    $style = get_option('infoblokk_style', 'default');
-    $url = esc_url(get_option('infoblokk_url', '#'));
+    $html = [
+        'right' => ['top' => '', 'bottom' => ''],
+        'left' => ['top' => '', 'bottom' => ''],
+    ];
 
-    if ($style === 'eu_social') {
-        $image = plugin_dir_url(__FILE__) . 'img/eu-szocialis-alap.png';
-    } else {
-        $image = plugin_dir_url(__FILE__) . ($position === 'top' ? 'img/infoblokk_top.png' : 'img/infoblokk_bottom.png');
+    foreach ($blocks as $index => $block) {
+        $block = wp_parse_args($block, infoblokk_empty_block());
+        if (empty($block['active'])) continue;
+
+        $position = $block['position'] === 'bottom' ? 'bottom' : 'top';
+        $style = infoblokk_normalize_style($block['style']);
+        $side = infoblokk_normalize_side($block['side'], $style);
+        $url = esc_url($block['url'] ?: '#');
+        $image = esc_url(infoblokk_image_url($style, $position));
+        $key = esc_attr(md5($index . '|' . $position . '|' . $side . '|' . $style . '|' . $url));
+
+        $html[$side][$position] .= '<div class="infoblokk-item" data-infoblokk-key="' . $key . '">';
+        if (empty($block['disable_close'])) {
+            $html[$side][$position] .= '<button type="button" class="infoblokk-close" aria-label="Infoblokk bezárása">×</button>';
+        }
+        $html[$side][$position] .= '<a href="' . $url . '"><img src="' . $image . '" alt="Infoblokk"></a></div>';
     }
-    $css_position = $position === 'top' ? 'top: 0px;' : 'bottom: 0px;';
 
-    $disable_close = get_option('infoblokk_disable_close');
+    if (!$html['right']['top'] && !$html['right']['bottom'] && !$html['left']['top'] && !$html['left']['bottom']) return;
 
     echo '
     <style>
-        #infoblokk {
+        .infoblokk-stack {
             position: fixed;
-            right: 0;
             z-index: 2000;
-            padding: 0;
-            display: none;
+            display: flex;
+            pointer-events: none;
         }
-        '.(!$disable_close ? '
-        #infoblokk-close {
+        .infoblokk-stack-right { right: 0; align-items: flex-end; }
+        .infoblokk-stack-left { left: 0; align-items: flex-start; }
+        .infoblokk-stack-top { top: 0; flex-direction: column; }
+        .infoblokk-stack-bottom { bottom: 0; flex-direction: column-reverse; }
+        .infoblokk-item {
+            position: relative;
+            display: none;
+            padding: 0;
+            pointer-events: auto;
+        }
+        .infoblokk-item img { display: block; max-width: 100vw; height: auto; }
+        .infoblokk-close {
             position: absolute;
             top: 0;
             left: -20px;
+            border: 0;
             background: #333;
             color: #fff;
             padding: 2px 5px;
             cursor: pointer;
             font-weight: bold;
+            line-height: 1;
             display: none;
         }
-        #infoblokk:hover #infoblokk-close {
-            display: block;
-        }
-        ' : '').'
+        .infoblokk-stack-left .infoblokk-close { left: auto; right: -20px; }
+        .infoblokk-item:hover .infoblokk-close,
+        .infoblokk-item:focus-within .infoblokk-close { display: block; }
     </style>
 
-    <div id="infoblokk" style="'.$css_position.'">
-        '.(!$disable_close ? '<span id="infoblokk-close">×</span>' : '').'
-        <a href="'.$url.'"><img src="'.$image.'" alt="Infoblokk"></a>
-    </div>
+    ' . ($html['right']['top'] ? '<div class="infoblokk-stack infoblokk-stack-right infoblokk-stack-top">' . $html['right']['top'] . '</div>' : '') . '
+    ' . ($html['right']['bottom'] ? '<div class="infoblokk-stack infoblokk-stack-right infoblokk-stack-bottom">' . $html['right']['bottom'] . '</div>' : '') . '
+    ' . ($html['left']['top'] ? '<div class="infoblokk-stack infoblokk-stack-left infoblokk-stack-top">' . $html['left']['top'] . '</div>' : '') . '
+    ' . ($html['left']['bottom'] ? '<div class="infoblokk-stack infoblokk-stack-left infoblokk-stack-bottom">' . $html['left']['bottom'] . '</div>' : '') . '
 
     <script>
-    document.addEventListener("DOMContentLoaded", function(){
-        if(!sessionStorage.getItem("infoblokk_closed")){
-            document.getElementById("infoblokk").style.display = "block";
-        }
-        '.(!$disable_close ? '
-        document.getElementById("infoblokk-close").addEventListener("click", function(){
-            document.getElementById("infoblokk").style.display = "none";
-            sessionStorage.setItem("infoblokk_closed", "1");
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".infoblokk-item").forEach(function (block) {
+            var storageKey = "infoblokk_closed_" + block.getAttribute("data-infoblokk-key");
+            if (!sessionStorage.getItem(storageKey)) block.style.display = "block";
+
+            var close = block.querySelector(".infoblokk-close");
+            if (close) {
+                close.addEventListener("click", function () {
+                    block.style.display = "none";
+                    sessionStorage.setItem(storageKey, "1");
+                });
+            }
         });
-        ' : '').'
     });
     </script>
     ';
