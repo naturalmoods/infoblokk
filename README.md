@@ -1,6 +1,6 @@
 # Infoblokk
 
-Egyszerű WordPress plugin jobb oldali, fix infoblokkok megjelenítésére.
+Egyszerű WordPress plugin fix infoblokkok megjelenítésére.
 
 ## Funkciók
 
