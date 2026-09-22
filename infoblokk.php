@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Infoblokk
-Description: Jobb oldali fix infoblokk, felül vagy alul megjelenítve.
-Version: 1.7
+Description: Fix infoblokkok megjelenítése többféle pozícióban.
+Version: 1.8
 Author: Cre-art Stúdió
 */
 
@@ -35,6 +35,11 @@ function infoblokk_styles() {
             'top' => 'infoblokk_ESBA_felso.webp',
             'bottom' => 'infoblokk_ESBA_also.webp',
         ],
+        'kap' => [
+            'label' => 'Közös Agrárpolitika (KAP)',
+            'top' => 'KAP.webp',
+            'bottom' => 'KAP.webp',
+        ],
     ];
 }
 
@@ -52,7 +57,13 @@ function infoblokk_can_go_left($style) {
 }
 
 function infoblokk_normalize_side($side, $style) {
+    if (infoblokk_normalize_style($style) === 'kap') return 'left';
+
     return $side === 'left' && infoblokk_can_go_left($style) ? 'left' : 'right';
+}
+
+function infoblokk_normalize_position($position, $style) {
+    return infoblokk_normalize_style($style) === 'kap' ? 'top' : ($position === 'bottom' ? 'bottom' : 'top');
 }
 
 function infoblokk_empty_block() {
@@ -76,7 +87,7 @@ function infoblokk_sanitize_blocks($blocks) {
         $style = infoblokk_normalize_style($block['style'] ?? 'stp');
         $clean[] = [
             'active' => empty($block['active']) ? 0 : 1,
-            'position' => (($block['position'] ?? 'top') === 'bottom') ? 'bottom' : 'top',
+            'position' => infoblokk_normalize_position($block['position'] ?? 'top', $style),
             'side' => infoblokk_normalize_side($block['side'] ?? 'right', $style),
             'style' => $style,
             'url' => esc_url_raw($block['url'] ?? ''),
@@ -146,7 +157,7 @@ function infoblokk_block_fields($index, $block) {
                         <option value="right" <?php selected($block['side'], 'right'); ?>>Jobbra</option>
                         <option value="left" <?php selected($block['side'], 'left'); ?>>Balra</option>
                     </select>
-                    <p class="description">Balra csak a Széchenyi Terv Plusz tehető; a többi mindig jobbra kerül.</p>
+                    <p class="description">A KAP mindig balra fent, a Széchenyi Terv Plusz mindkét oldalon, a többi mindig jobbra jelenik meg.</p>
                 </td>
             </tr>
             <tr>
@@ -229,8 +240,8 @@ function infoblokk_display() {
         $block = wp_parse_args($block, infoblokk_empty_block());
         if (empty($block['active'])) continue;
 
-        $position = $block['position'] === 'bottom' ? 'bottom' : 'top';
         $style = infoblokk_normalize_style($block['style']);
+        $position = infoblokk_normalize_position($block['position'], $style);
         $side = infoblokk_normalize_side($block['side'], $style);
         $url = esc_url($block['url'] ?: '#');
         $image = esc_url(infoblokk_image_url($style, $position));
