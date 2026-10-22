@@ -2,7 +2,7 @@
 /*
 Plugin Name: Infoblokk
 Description: Fix infoblokkok megjelenítése többféle pozícióban.
-Version: 1.9
+Version: 1.10
 Author: Cre-art Stúdió
 */
 
@@ -252,7 +252,7 @@ function infoblokk_display() {
         $image = esc_url(infoblokk_image_url($style, $position));
         $key = esc_attr(md5($index . '|' . $position . '|' . $side . '|' . $style . '|' . $url));
 
-        $html[$side][$position] .= '<div class="infoblokk-item' . ($style === 'kap' ? ' infoblokk-item-kap' : '') . '" data-infoblokk-key="' . $key . '">';
+        $html[$side][$position] .= '<div class="infoblokk-item infoblokk-item-' . $style . '" data-infoblokk-key="' . $key . '">';
         if (empty($block['disable_close'])) {
             $html[$side][$position] .= '<button type="button" class="infoblokk-close" aria-label="Infoblokk bezárása">×</button>';
         }
@@ -281,6 +281,7 @@ function infoblokk_display() {
         }
         .infoblokk-item img { display: block; max-width: 100vw; height: auto; }
         .infoblokk-item-kap { margin: 16px 0 0 16px; }
+        .infoblokk-item-eu { margin: 16px; }
         .infoblokk-close {
             position: absolute;
             top: 0;
