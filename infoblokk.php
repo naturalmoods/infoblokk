@@ -2,7 +2,7 @@
 /*
 Plugin Name: Infoblokk
 Description: Fix infoblokkok megjelenítése többféle pozícióban.
-Version: 1.8
+Version: 1.9
 Author: Cre-art Stúdió
 */
 
@@ -39,6 +39,11 @@ function infoblokk_styles() {
             'label' => 'Közös Agrárpolitika (KAP)',
             'top' => 'KAP.webp',
             'bottom' => 'KAP.webp',
+        ],
+        'eu' => [
+            'label' => 'EU társfinanszírozás',
+            'top' => 'eu-tarsfinanszirozas.webp',
+            'bottom' => 'eu-tarsfinanszirozas.webp',
         ],
     ];
 }
@@ -157,7 +162,7 @@ function infoblokk_block_fields($index, $block) {
                         <option value="right" <?php selected($block['side'], 'right'); ?>>Jobbra</option>
                         <option value="left" <?php selected($block['side'], 'left'); ?>>Balra</option>
                     </select>
-                    <p class="description">A KAP mindig balra fent, a Széchenyi Terv Plusz mindkét oldalon, a többi mindig jobbra jelenik meg.</p>
+                    <p class="description">A KAP mindig balra fent, a Széchenyi Terv Plusz és az EU társfinanszírozás mindkét oldalon, a többi mindig jobbra jelenik meg.</p>
                 </td>
             </tr>
             <tr>

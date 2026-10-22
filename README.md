@@ -7,8 +7,8 @@ Egyszerű WordPress plugin fix infoblokkok megjelenítésére.
 - több infoblokk kezelése egy oldalon
 - infoblokkonként külön URL
 - felső vagy alsó pozíció
-- Széchenyi Terv Plusz bal vagy jobb oldali megjelenítése; a KAP mindig balra fent, a többi kép mindig jobb oldalon jelenik meg
-- választható Széchenyi Terv Plusz, KAP, ERFA, ESZA, KA, ESBA kép
+- Széchenyi Terv Plusz és EU társfinanszírozás bal vagy jobb oldali megjelenítése; a KAP mindig balra fent, a többi kép mindig jobb oldalon jelenik meg
+- választható Széchenyi Terv Plusz, EU társfinanszírozás, KAP, ERFA, ESZA, KA, ESBA kép
 - opcionális bezárás gomb
 - bezárás megjegyzése böngésző session alatt
 
@@ -31,6 +31,7 @@ php -l infoblokk.php
 ```text
 infoblokk.php
 img/
+  eu-tarsfinanszirozas.webp
   KAP.webp
   szechenyi-terv-plusz.webp
   infoblokk_ERFA_also.webp
